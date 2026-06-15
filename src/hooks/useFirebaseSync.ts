@@ -18,6 +18,9 @@ export const useFirebaseSync = (matchCode: string | undefined, isAdmin: boolean)
         useMatchStore.setState(snapshot.val());
       }
       setIsLoading(false);
+    }).catch((err) => {
+      console.error("Firebase read error:", err);
+      setIsLoading(false); // Make sure we stop loading even on error
     });
 
     // If viewer, keep listening to updates
