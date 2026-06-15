@@ -1,73 +1,111 @@
-# React + TypeScript + Vite
+# WPL Scoring App 🏏
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Firebase](https://img.shields.io/badge/firebase-%23039BE5.svg?style=for-the-badge&logo=firebase)
 
-Currently, two official plugins are available:
+A modern, highly responsive, real-time Cricket Scoring Application built with React. Perfect for local tournaments, street cricket, and professional matches. 
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The app features a sleek "neon" UI, dedicated umpire controls, real-time synchronization across multiple devices for spectators, and automatic handling of complex cricket rules like "Last Man Standing."
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## ✨ Key Features
 
-## Expanding the ESLint configuration
+- 🟢 **Real-Time Live Scoring:** Viewers from anywhere in the world can track the match live using a unique 6-digit match code. Powered by Firebase Realtime Database.
+- 🏏 **"Last Man Standing" Rule:** Automatically handles the scenario where 10 wickets fall but the last remaining batter continues to play without a non-striker.
+- 👔 **Umpire (Admin) Controls:** Dedicated admin dashboard to update runs, wickets, extras (wides/no-balls), swap strike, and undo actions.
+- 🔄 **Undo Functionality:** Made a mistake? Quickly undo the last ball without breaking the score or over calculations.
+- 📱 **Mobile-First Neon UI:** Beautiful dark mode aesthetic with micro-animations (e.g., dynamic "FOUR!" and "SIX!" popups).
+- ⚡ **Optimized State Management:** Blazing fast local updates powered by Zustand before syncing to the cloud.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠 Tech Stack
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Frontend:** React 19, Vite, TypeScript
+- **Styling:** Tailwind CSS, Lucide React (Icons)
+- **State Management:** Zustand
+- **Backend/Database:** Firebase Realtime Database
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## 📖 How It Works (Application Flow)
+
+### 1. Match Setup
+- Two teams are defined, and the total overs for the match are set.
+- The Admin adds players to **Team 1** and **Team 2**.
+
+### 2. Match Execution (Umpire Mode)
+- Once the match starts, a **Unique Match Code** is generated.
+- The Admin assigns the Striker, Non-Striker, and Bowler.
+- The Admin uses the Umpire Dashboard to record:
+  - Runs (0, 1, 2, 3, 4, 6)
+  - Wickets (W)
+  - Extras (WD, NB)
+- Strike rotations happen automatically on odd runs and over completions.
+
+### 3. Spectator Mode (Real-Time Viewing)
+- Anyone can go to the app's homepage and enter the **Unique Match Code**.
+- They are taken to a Read-Only Live Score dashboard.
+- As the Umpire taps a button on their phone, the viewer's screen updates instantly via Firebase WebSockets.
+
+---
+
+## 🚀 Installation & Local Setup
+
+### Prerequisites
+- Node.js (v18+ recommended)
+- A Firebase project with a Realtime Database created.
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/your-username/wpl-scoring-app.git
+cd wpl-scoring-app
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 2. Install dependencies
+```bash
+npm install
 ```
+
+### 3. Set up Environment Variables
+Create a `.env` file in the root directory and add your Firebase credentials:
+```env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_DATABASE_URL=https://your_project-default-rtdb.firebaseio.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+### 4. Run the Development Server
+```bash
+npm run dev
+```
+Open `http://localhost:5173` in your browser.
+
+---
+
+## ☁️ Deployment
+
+This project is optimized for deployment on [Vercel](https://vercel.com/).
+
+1. Push your code to GitHub.
+2. Import the repository in Vercel.
+3. In the Vercel deployment settings, go to **Environment Variables**.
+4. Add all the `VITE_FIREBASE_*` variables from your `.env` file.
+5. Click **Deploy**.
+
+> **Note:** Make sure your `.env` file is included in your `.gitignore` so you don't leak your database keys!
+
+---
+
+## 🤝 Contributing
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](#).
+
+## 📝 License
+This project is [MIT](LICENSE) licensed.
