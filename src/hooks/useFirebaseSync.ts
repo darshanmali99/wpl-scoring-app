@@ -3,6 +3,22 @@ import { ref, onValue, set, off, get } from 'firebase/database';
 import { database } from '../lib/firebase';
 import { useMatchStore } from '../store/matchStore';
 
+// Helper to extract only serializable data from the Zustand store
+const getSerializableState = (state: any) => {
+  return {
+    matchCode: state.matchCode,
+    status: state.status,
+    totalOvers: state.totalOvers,
+    team1: state.team1,
+    team2: state.team2,
+    currentInnings: state.currentInnings,
+    strikerId: state.strikerId,
+    nonStrikerId: state.nonStrikerId,
+    currentBowler: state.currentBowler,
+    ballHistory: state.ballHistory,
+  };
+};
+
 export const useFirebaseSync = (matchCode: string | undefined, isAdmin: boolean) => {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,17 +59,18 @@ export const useFirebaseSync = (matchCode: string | undefined, isAdmin: boolean)
     const matchRef = ref(database, `matches/${matchCode}`);
 
     // Push initial state immediately (useful for newly created matches)
-    const { pastStates, ...initialState } = useMatchStore.getState();
-    set(matchRef, initialState).catch((err) => {
+    const initialState = getSerializableState(useMatchStore.getState());
+    
+    // Using Promise.resolve().then to prevent synchronous throws from Firebase from crashing React
+    Promise.resolve().then(() => set(matchRef, initialState)).catch((err) => {
       console.error("Firebase sync error.", err);
     });
 
     const unsubscribe = useMatchStore.subscribe((state) => {
-      // Don't sync the pastStates or it will get too large
-      const { pastStates, ...stateToSync } = state;
+      const stateToSync = getSerializableState(state);
       // Push state to Firebase
-      set(matchRef, stateToSync).catch((err) => {
-        console.error("Firebase sync error. Did you add the configuration in src/lib/firebase.ts?", err);
+      Promise.resolve().then(() => set(matchRef, stateToSync)).catch((err) => {
+        console.error("Firebase sync error.", err);
       });
     });
 
