@@ -5,6 +5,7 @@ import type { Player, BallEvent } from '../store/matchStore';
 import { Card } from '../components/Card';
 import { NeonButton } from '../components/NeonButton';
 import { Trophy, Trash2, Undo2 } from 'lucide-react';
+import { useFirebaseSync } from '../hooks/useFirebaseSync';
 
 const ScoreButton = ({ value, onClick, color = 'green', className = '', disabled = false }: { value: string | number, onClick: () => void, color?: 'green' | 'blue' | 'red' | 'yellow', className?: string, disabled?: boolean }) => {
   const colorClass = color === 'green' ? 'border-neonGreen text-neonGreen hover:bg-neonGreen/20' 
@@ -31,6 +32,9 @@ export const LiveScore = () => {
   const store = useMatchStore();
   const [cheer, setCheer] = useState<string | null>(null);
 
+  // Sync state with Firebase
+  const { isLoading } = useFirebaseSync(code, isAdmin);
+
   useEffect(() => {
     if (store.matchCode && store.matchCode !== code) {
       // Logic for mismatched code
@@ -55,6 +59,13 @@ export const LiveScore = () => {
       }
     }
   }, [store.ballHistory]);
+
+  if (isLoading) {
+    return <div className="p-6 text-center text-gray-500 flex flex-col items-center justify-center min-h-screen">
+      <div className="w-12 h-12 border-4 border-neonBlue border-t-transparent rounded-full animate-spin mb-4"></div>
+      <p>Loading Live Score...</p>
+    </div>;
+  }
 
   if (store.status === 'SETUP' || store.status === 'PLAYERS_SETUP') {
     return <div className="p-6 text-center text-gray-500 flex flex-col items-center justify-center min-h-screen">

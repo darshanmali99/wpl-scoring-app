@@ -296,10 +296,18 @@ export const useMatchStore = create<MatchState>((set) => ({
     let newStriker: string | null = null;
     let newNonStriker: string | null = state.nonStrikerId;
 
-    // End of over logic, swap strike if a nonStriker exists
-    if (newTotalBalls % 6 === 0 && newNonStriker !== null) {
-       newStriker = newNonStriker;
-       newNonStriker = null;
+    const remainingPlayers = updatedPlayers.filter(p => !p.isOut);
+    
+    // Last man standing logic
+    if (remainingPlayers.length === 1) {
+        newStriker = remainingPlayers[0].id;
+        newNonStriker = null;
+    } else {
+        // End of over logic, swap strike if a nonStriker exists
+        if (newTotalBalls % 6 === 0 && newNonStriker !== null) {
+           newStriker = newNonStriker;
+           newNonStriker = null;
+        }
     }
 
     let nextStatus = state.status;
