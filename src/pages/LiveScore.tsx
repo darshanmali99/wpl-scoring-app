@@ -450,6 +450,53 @@ export const LiveScore = () => {
             )}
           </Card>
         )}
+      {/* Session Match History */}
+      {store.sessionMatches && store.sessionMatches.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+             Session History <span className="text-sm font-normal text-gray-400">({store.sessionMatches.length} Matches)</span>
+          </h3>
+          <div className="space-y-4">
+            {store.sessionMatches.map((m, i) => {
+              const t1Won = m.team1.runs > m.team2.runs;
+              const tied = m.team1.runs === m.team2.runs;
+              return (
+                <Card key={m.id} className="bg-darkSurface/50 border-gray-700/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-neonBlue font-semibold">Match {i + 1}</span>
+                    <span className="text-xs px-2 py-1 bg-gray-800 rounded text-gray-300">
+                      {m.totalOvers} Overs
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      <div className={`font-bold ${t1Won ? 'text-neonGreen' : 'text-gray-300'}`}>
+                        {m.team1.name} <span className="text-sm">({m.team1.runs}/{m.team1.wickets})</span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {Math.floor(m.team1.totalBalls / 6)}.{m.team1.totalBalls % 6} overs
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-600 px-2 font-bold">VS</div>
+                    <div className="flex-1 text-right">
+                      <div className={`font-bold ${!t1Won && !tied ? 'text-neonGreen' : 'text-gray-300'}`}>
+                        <span className="text-sm">({m.team2.runs}/{m.team2.wickets})</span> {m.team2.name}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {Math.floor(m.team2.totalBalls / 6)}.{m.team2.totalBalls % 6} overs
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-center text-xs text-gray-400 border-t border-gray-800 pt-2">
+                    {tied ? 'Match Tied' : `${t1Won ? m.team1.name : m.team2.name} Won`}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       </div>
     </div>
   );

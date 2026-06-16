@@ -41,8 +41,14 @@ export const Home = () => {
           {matchCode && (
              <NeonButton 
              variant="outline"
-             className="w-full flex items-center justify-center gap-2"
-             onClick={() => navigate(`/live/${matchCode}?admin=true`)}
+             onClick={() => {
+               const status = useMatchStore.getState().status;
+               if (status === 'PLAYERS_SETUP') {
+                 navigate('/add-players');
+               } else {
+                 navigate(`/live/${matchCode}?admin=true`);
+               }
+             }}
            >
              <Users className="w-5 h-5" /> Resume Session
            </NeonButton>
