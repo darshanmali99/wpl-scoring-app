@@ -15,7 +15,9 @@ const getSerializableState = (state: any) => {
     strikerId: state.strikerId,
     nonStrikerId: state.nonStrikerId,
     currentBowler: state.currentBowler,
-    ballHistory: state.ballHistory,
+    ballHistory: state.ballHistory || [],
+    sessionMatches: state.sessionMatches || [],
+    innings1BallHistory: state.innings1BallHistory || [],
   };
 };
 
@@ -28,16 +30,22 @@ export const useFirebaseSync = (matchCode: string | undefined, isAdmin: boolean)
 
     const matchRef = ref(database, `matches/${matchCode}`);
     
-    // First, try to fetch once to resolve loading quickly
-    get(matchRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        useMatchStore.setState(snapshot.val());
-      }
+    // If Admin and we already have this match in local state, DO NOT fetch and overwrite.
+    // This prevents losing local state when navigating from Setup/AddPlayers pages to LiveScore.
+    if (isAdmin && useMatchStore.getState().matchCode === matchCode) {
       setIsLoading(false);
-    }).catch((err) => {
-      console.error("Firebase read error:", err);
-      setIsLoading(false); // Make sure we stop loading even on error
-    });
+    } else {
+      // Fetch once to load initial state (for viewers, or admins who refreshed the page)
+      get(matchRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          useMatchStore.setState(snapshot.val());
+        }
+        setIsLoading(false);
+      }).catch((err) => {
+        console.error("Firebase read error:", err);
+        setIsLoading(false);
+      });
+    }
 
     // If viewer, keep listening to updates
     if (!isAdmin) {
