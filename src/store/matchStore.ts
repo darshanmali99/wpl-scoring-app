@@ -51,6 +51,7 @@ export type StateSnapshot = {
   nonStrikerId: string | null;
   currentBowler: string;
   ballHistory: BallEvent[];
+  innings1BallHistory: BallEvent[];
 };
 
 type MatchState = {

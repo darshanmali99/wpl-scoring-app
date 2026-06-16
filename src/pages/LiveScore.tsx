@@ -435,14 +435,14 @@ export const LiveScore = () => {
                 }}>
                   Start Next Match in Session
                 </NeonButton>
-                <NeonButton variant="outline" color="red" className="w-full" onClick={() => {
+                <button className="w-full py-3 rounded-lg border-2 border-red-500 text-red-500 hover:bg-red-500/10 font-bold transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)]" onClick={() => {
                   if (confirm("End session and clear all match records?")) {
                     store.endSession();
                     navigate('/');
                   }
                 }}>
                   End Session
-                </NeonButton>
+                </button>
               </div>
             )}
             {!isAdmin && (
