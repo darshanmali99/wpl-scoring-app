@@ -61,17 +61,28 @@ export const useFirebaseSync = (matchCode: string | undefined, isAdmin: boolean)
     // Push initial state immediately (useful for newly created matches)
     const initialState = getSerializableState(useMatchStore.getState());
     
+    console.log("WRITING TO FIREBASE", matchCode, initialState);
+    
     // Using Promise.resolve().then to prevent synchronous throws from Firebase from crashing React
-    Promise.resolve().then(() => set(matchRef, initialState)).catch((err) => {
-      console.error("Firebase sync error.", err);
-    });
+    Promise.resolve()
+      .then(() => set(matchRef, initialState))
+      .then(() => console.log("FIREBASE WRITE SUCCESS", matchCode))
+      .catch((err) => {
+        console.error("FIREBASE WRITE FAILED", err);
+      });
 
     const unsubscribe = useMatchStore.subscribe((state) => {
       const stateToSync = getSerializableState(state);
+      
+      console.log("SYNC UPDATE", stateToSync);
+      
       // Push state to Firebase
-      Promise.resolve().then(() => set(matchRef, stateToSync)).catch((err) => {
-        console.error("Firebase sync error.", err);
-      });
+      Promise.resolve()
+        .then(() => set(matchRef, stateToSync))
+        .then(() => console.log("SYNC UPDATE SUCCESS", matchCode))
+        .catch((err) => {
+          console.error("FIREBASE WRITE FAILED", err);
+        });
     });
 
     return () => unsubscribe();

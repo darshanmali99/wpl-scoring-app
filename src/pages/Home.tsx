@@ -44,7 +44,7 @@ export const Home = () => {
              className="w-full flex items-center justify-center gap-2"
              onClick={() => navigate(`/live/${matchCode}?admin=true`)}
            >
-             <Users className="w-5 h-5" /> Resume Match
+             <Users className="w-5 h-5" /> Resume Session
            </NeonButton>
           )}
         </Card>

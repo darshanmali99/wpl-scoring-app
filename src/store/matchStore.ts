@@ -33,6 +33,14 @@ export type BallEvent = {
   ballNum: number;
 };
 
+export type CompletedMatch = {
+  id: string;
+  team1: Team;
+  team2: Team;
+  totalOvers: number;
+  ballHistory: BallEvent[];
+};
+
 // Snapshot for undo
 export type StateSnapshot = {
   status: MatchStatus;
@@ -56,7 +64,9 @@ type MatchState = {
   nonStrikerId: string | null;
   currentBowler: string;
   ballHistory: BallEvent[];
+  innings1BallHistory: BallEvent[];
   pastStates: StateSnapshot[]; // For undo history
+  sessionMatches: CompletedMatch[]; // Matches in current session
 
   // Actions
   setMatchDetails: (team1Name: string, team2Name: string, overs: number) => void;
@@ -74,6 +84,8 @@ type MatchState = {
   undoLastAction: () => void;
   swapStrikeManually: (newStrikerId: string) => void;
   deleteMatch: () => void;
+  startNewMatchInSession: () => void;
+  endSession: () => void;
 };
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -98,6 +110,7 @@ const createSnapshot = (state: MatchState): StateSnapshot => ({
   nonStrikerId: state.nonStrikerId,
   currentBowler: state.currentBowler,
   ballHistory: JSON.parse(JSON.stringify(state.ballHistory)),
+  innings1BallHistory: JSON.parse(JSON.stringify(state.innings1BallHistory || [])),
 });
 
 // Helper to push a snapshot to history (max 10)
@@ -118,7 +131,9 @@ export const useMatchStore = create<MatchState>((set) => ({
   nonStrikerId: null,
   currentBowler: '',
   ballHistory: [],
+  innings1BallHistory: [],
   pastStates: [],
+  sessionMatches: [],
 
   setMatchDetails: (team1Name, team2Name, overs) => set((state) => ({
     matchCode: generateMatchCode(),
@@ -371,6 +386,7 @@ export const useMatchStore = create<MatchState>((set) => ({
       strikerId: null,
       nonStrikerId: null,
       currentBowler: '', // Reset bowler
+      innings1BallHistory: [...state.ballHistory],
       ballHistory: [], // reset history for new innings
     };
   }),
@@ -390,6 +406,7 @@ export const useMatchStore = create<MatchState>((set) => ({
       nonStrikerId: snapshot.nonStrikerId,
       currentBowler: snapshot.currentBowler,
       ballHistory: snapshot.ballHistory,
+      innings1BallHistory: snapshot.innings1BallHistory,
       pastStates: newPastStates,
     };
   }),
@@ -418,5 +435,61 @@ export const useMatchStore = create<MatchState>((set) => ({
     currentBowler: '',
     ballHistory: [],
     pastStates: [],
-  })
+    sessionMatches: [],
+  }),
+
+  startNewMatchInSession: () => set((state) => {
+    const completedMatch: CompletedMatch = {
+      id: generateId(),
+      team1: JSON.parse(JSON.stringify(state.team1)),
+      team2: JSON.parse(JSON.stringify(state.team2)),
+      totalOvers: state.totalOvers,
+      ballHistory: [...state.innings1BallHistory, ...state.ballHistory],
+    };
+
+    const resetTeam = (team: Team): Team => ({
+      ...team,
+      runs: 0,
+      wickets: 0,
+      totalBalls: 0,
+      players: team.players.map(p => ({
+        ...p,
+        runs: 0,
+        ballsFaced: 0,
+        fours: 0,
+        sixes: 0,
+        isOut: false
+      }))
+    });
+
+    return {
+      sessionMatches: [...state.sessionMatches, completedMatch],
+      status: 'PLAYERS_SETUP',
+      team1: resetTeam(state.team1),
+      team2: resetTeam(state.team2),
+      currentInnings: 1,
+      strikerId: null,
+      nonStrikerId: null,
+      currentBowler: '',
+      ballHistory: [],
+      innings1BallHistory: [],
+      pastStates: [],
+    };
+  }),
+
+  endSession: () => set({
+    matchCode: '',
+    status: 'SETUP',
+    totalOvers: 0,
+    team1: initialTeam('t1'),
+    team2: initialTeam('t2'),
+    currentInnings: 1,
+    strikerId: null,
+    nonStrikerId: null,
+    currentBowler: '',
+    ballHistory: [],
+    innings1BallHistory: [],
+    pastStates: [],
+    sessionMatches: [],
+  }),
 }));

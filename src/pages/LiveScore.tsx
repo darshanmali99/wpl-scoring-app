@@ -4,7 +4,7 @@ import { useMatchStore } from '../store/matchStore';
 import type { Player, BallEvent } from '../store/matchStore';
 import { Card } from '../components/Card';
 import { NeonButton } from '../components/NeonButton';
-import { Trophy, Trash2, Undo2 } from 'lucide-react';
+import { Trophy, Trash2, Undo2, Crown, ChevronDown, ChevronUp } from 'lucide-react';
 import { useFirebaseSync } from '../hooks/useFirebaseSync';
 
 const ScoreButton = ({ value, onClick, color = 'green', className = '', disabled = false }: { value: string | number, onClick: () => void, color?: 'green' | 'blue' | 'red' | 'yellow', className?: string, disabled?: boolean }) => {
@@ -31,6 +31,7 @@ export const LiveScore = () => {
 
   const store = useMatchStore();
   const [cheer, setCheer] = useState<string | null>(null);
+  const [showOverHistory, setShowOverHistory] = useState(false);
 
   // Sync state with Firebase
   const { isLoading } = useFirebaseSync(code, isAdmin);
@@ -99,6 +100,35 @@ export const LiveScore = () => {
     }
   };
 
+  const oversHistory = Array.from({ length: Math.floor(battingTeam.totalBalls / 6) + (battingTeam.totalBalls % 6 === 0 ? 0 : 1) }).map((_, i) => {
+    return store.ballHistory.filter(b => b.overNum === i);
+  });
+
+  let manOfTheMatch = null;
+  let bowlerOfTheMatch = null;
+
+  if (store.status === 'COMPLETED') {
+    const allPlayers = [...store.team1.players, ...store.team2.players];
+    manOfTheMatch = allPlayers.reduce((max, p) => p.runs > max.runs ? p : max, allPlayers[0]);
+    
+    const allBalls = [...store.innings1BallHistory, ...store.ballHistory];
+    const bowlerStats: Record<string, { wickets: number, runs: number }> = {};
+    allBalls.forEach(b => {
+       if (!b.bowlerName) return;
+       if (!bowlerStats[b.bowlerName]) bowlerStats[b.bowlerName] = { wickets: 0, runs: 0 };
+       if (b.isWicket) bowlerStats[b.bowlerName].wickets += 1;
+       bowlerStats[b.bowlerName].runs += b.runs + (b.isExtra ? 1 : 0);
+    });
+    const bowlers = Object.entries(bowlerStats).map(([name, stats]) => ({ name, ...stats }));
+    if (bowlers.length > 0) {
+       bowlerOfTheMatch = bowlers.reduce((best, b) => {
+          if (b.wickets > best.wickets) return b;
+          if (b.wickets === best.wickets && b.runs < best.runs) return b;
+          return best;
+       }, bowlers[0]);
+    }
+  }
+
   const renderBall = (b: BallEvent) => {
     if (b.isWicket) return 'W';
     if (b.isExtra) return b.extraType;
@@ -166,10 +196,21 @@ export const LiveScore = () => {
       {/* Cheer Overlay */}
       {cheer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="text-8xl font-extrabold italic transform -rotate-12 scale-150 animate-bounce">
-            <span className={`drop-shadow-[0_0_20px_currentColor] ${cheer === 'SIX!' ? 'text-neonGreen' : 'text-neonBlue'}`}>
-              {cheer}
-            </span>
+          <div className="relative">
+            {/* Fancy Bat and Ball Animation */}
+            {cheer === 'SIX!' || cheer === 'FOUR!' ? (
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 pointer-events-none flex items-center justify-center">
+                <div className="w-4 h-24 bg-[#e6c280] rounded-sm animate-bat-swing origin-bottom absolute bottom-10 -left-10 shadow-[0_0_15px_rgba(230,194,128,0.5)] z-20"></div>
+                <div className="w-6 h-6 bg-red-600 rounded-full animate-ball-fly absolute bottom-10 left-0 shadow-[inset_-2px_-2px_5px_rgba(0,0,0,0.5),0_0_10px_red] z-10">
+                  <div className="w-full h-[2px] bg-white/50 absolute top-1/2 -translate-y-1/2 shadow-sm"></div>
+                </div>
+              </div>
+            ) : null}
+            <div className="text-8xl font-extrabold italic transform -rotate-12 scale-150 animate-bounce relative z-30">
+              <span className={`drop-shadow-[0_0_20px_currentColor] ${cheer === 'SIX!' ? 'text-neonGreen' : 'text-neonBlue'}`}>
+                {cheer}
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -224,6 +265,40 @@ export const LiveScore = () => {
                   Need <span className="text-white font-bold">{store.team1.runs + 1 - store.team2.runs}</span> runs in <span className="text-white font-bold">{(store.totalOvers * 6) - store.team2.totalBalls}</span> balls
                 </p>
              </div>
+          )}
+
+          {/* Over History Accordion */}
+          {oversHistory.length > 0 && (
+            <div className="mt-4 border-t border-white/10 pt-3">
+              <button 
+                onClick={() => setShowOverHistory(!showOverHistory)}
+                className="w-full flex items-center justify-between text-xs sm:text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                <span>Previous Overs History</span>
+                {showOverHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              
+              {showOverHistory && (
+                <div className="mt-3 space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar text-left">
+                  {oversHistory.map((overBalls, index) => {
+                    const overRuns = overBalls.reduce((sum, b) => sum + b.runs + (b.isExtra ? 1 : 0), 0);
+                    return (
+                      <div key={index} className="flex items-center justify-between bg-black/30 p-2 rounded border border-white/5">
+                        <span className="text-xs text-gray-400 w-12">Over {index + 1}</span>
+                        <div className="flex-1 flex gap-1 overflow-x-auto mx-2 custom-scrollbar pb-1">
+                          {overBalls.map(b => (
+                            <div key={b.id} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${b.isWicket ? 'bg-red-500/20 text-red-500 border border-red-500/50' : b.runs === 4 || b.runs === 6 ? 'bg-neonGreen/20 text-neonGreen border border-neonGreen/50' : b.isExtra ? 'bg-yellow-400/20 text-yellow-400 border border-yellow-400/50' : 'bg-white/10 text-white border border-white/20'}`}>
+                              {renderBall(b)}
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-xs font-bold text-neonBlue w-14 text-right">{overRuns} runs</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           )}
         </Card>
 
@@ -314,14 +389,64 @@ export const LiveScore = () => {
         )}
 
         {store.status === 'COMPLETED' && (
-          <Card className="text-center bg-neonGreen/10 border-neonGreen mt-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-neonGreen mb-2">Match Completed</h2>
-            <p className="text-lg sm:text-xl">
+          <Card className="text-center bg-neonGreen/10 border-neonGreen mt-4 relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 text-neonGreen/20 pointer-events-none">
+              <Trophy className="w-40 h-40" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-neonGreen mb-2 relative z-10">Match Completed</h2>
+            <p className="text-lg sm:text-xl relative z-10 mb-4">
               {store.team1.runs > store.team2.runs ? `${store.team1.name} Won!` : 
                store.team1.runs < store.team2.runs ? `${store.team2.name} Won!` : 'Match Tied!'}
             </p>
+
+            {/* Awards Section */}
+            <div className="space-y-3 mb-6 relative z-10">
+              {manOfTheMatch && (
+                <div className="bg-black/50 p-3 rounded-lg border border-yellow-400/30 flex items-center gap-3">
+                  <div className="p-2 bg-yellow-400/20 rounded-full text-yellow-400 shrink-0">
+                    <Crown className="w-6 h-6" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs text-gray-400 uppercase tracking-wider">Man of the Match</div>
+                    <div className="font-bold text-white text-lg">{manOfTheMatch.name}</div>
+                    <div className="text-xs text-neonGreen">{manOfTheMatch.runs} runs ({manOfTheMatch.ballsFaced} balls)</div>
+                  </div>
+                </div>
+              )}
+              {bowlerOfTheMatch && (
+                <div className="bg-black/50 p-3 rounded-lg border border-blue-400/30 flex items-center gap-3">
+                  <div className="p-2 bg-blue-400/20 rounded-full text-blue-400 shrink-0">
+                    <Crown className="w-6 h-6" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs text-gray-400 uppercase tracking-wider">Bowler of the Match</div>
+                    <div className="font-bold text-white text-lg">{bowlerOfTheMatch.name}</div>
+                    <div className="text-xs text-neonBlue">{bowlerOfTheMatch.wickets} Wickets ({bowlerOfTheMatch.runs} runs)</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {isAdmin && (
-              <NeonButton className="mt-6 w-full" onClick={() => navigate('/')}>Back to Home</NeonButton>
+              <div className="flex flex-col gap-3 relative z-10">
+                <NeonButton className="w-full" onClick={() => {
+                  store.startNewMatchInSession();
+                  navigate('/add-players');
+                }}>
+                  Start Next Match in Session
+                </NeonButton>
+                <NeonButton variant="outline" color="red" className="w-full" onClick={() => {
+                  if (confirm("End session and clear all match records?")) {
+                    store.endSession();
+                    navigate('/');
+                  }
+                }}>
+                  End Session
+                </NeonButton>
+              </div>
+            )}
+            {!isAdmin && (
+              <NeonButton className="mt-6 w-full relative z-10" onClick={() => navigate('/')}>Back to Home</NeonButton>
             )}
           </Card>
         )}
