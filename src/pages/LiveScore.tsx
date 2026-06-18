@@ -4,10 +4,11 @@ import { useMatchStore } from '../store/matchStore';
 import type { Player, BallEvent } from '../store/matchStore';
 import { Card } from '../components/Card';
 import { NeonButton } from '../components/NeonButton';
-import { Trophy, Trash2, Undo2, Crown, ChevronDown, ChevronUp, MonitorPlay, UserMinus } from 'lucide-react';
+import { Trophy, Trash2, Undo2, Crown, ChevronDown, ChevronUp, MonitorPlay, UserMinus, Settings } from 'lucide-react';
 import { useFirebaseSync } from '../hooks/useFirebaseSync';
 import { Scoreboard } from '../components/Scoreboard';
 import { WicketAnimation } from '../components/WicketAnimation';
+import { EditMatchModal } from '../components/EditMatchModal';
 
 const ScoreButton = ({ value, onClick, color = 'green', className = '', disabled = false }: { value: string | number, onClick: () => void, color?: 'green' | 'blue' | 'red' | 'yellow', className?: string, disabled?: boolean }) => {
   const colorClass = color === 'green' ? 'border-neonGreen text-neonGreen hover:bg-neonGreen/20' 
@@ -36,6 +37,7 @@ export const LiveScore = () => {
   const [showOverHistory, setShowOverHistory] = useState(false);
   const [showScoreboard, setShowScoreboard] = useState(!isAdmin); // Viewers see it by default
   const [showWicketAnim, setShowWicketAnim] = useState(false);
+  const [showEditMatch, setShowEditMatch] = useState(false);
   const [prevWickets, setPrevWickets] = useState(0);
 
   // Sync state with Firebase
@@ -234,6 +236,7 @@ export const LiveScore = () => {
 
       {showWicketAnim && <WicketAnimation onComplete={() => setShowWicketAnim(false)} />}
       {showScoreboard && <Scoreboard onClose={() => isAdmin ? setShowScoreboard(false) : navigate('/')} />}
+      {showEditMatch && <EditMatchModal onClose={() => setShowEditMatch(false)} />}
 
       {/* Header Bar */}
       <div className="bg-darkSurface p-4 flex justify-between items-center shadow-lg border-b border-white/5">
@@ -384,22 +387,10 @@ export const LiveScore = () => {
               </h3>
               <div className="flex gap-2">
                 <button 
-                  onClick={() => {
-                     const playerName = prompt("Enter Player Name to remove:");
-                     if (playerName) {
-                       const player = battingTeam.players.find(p => p.name.toLowerCase() === playerName.toLowerCase()) || 
-                                      bowlingTeam.players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
-                       if (player) {
-                         const teamNum = battingTeam.players.includes(player) ? store.currentInnings : (store.currentInnings === 1 ? 2 : 1);
-                         store.removePlayerMidMatch(teamNum as 1|2, player.id);
-                       } else {
-                         alert("Player not found!");
-                       }
-                     }
-                  }}
-                  className="flex items-center gap-1 text-[10px] sm:text-xs text-red-400 hover:text-red-300 transition-colors bg-red-400/10 px-2 py-1 rounded border border-red-400/20"
+                  onClick={() => setShowEditMatch(true)}
+                  className="flex items-center gap-1 text-[10px] sm:text-xs text-blue-400 hover:text-blue-300 transition-colors bg-blue-400/10 px-2 py-1 rounded border border-blue-400/20"
                 >
-                  <UserMinus className="w-3 h-3" /> Remove Player
+                  <Settings className="w-3 h-3" /> Edit Match
                 </button>
                 {store.pastStates.length > 0 && (
                   <button 

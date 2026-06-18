@@ -89,6 +89,8 @@ type MatchState = {
   startNewMatchInSession: () => void;
   endSession: () => void;
   removePlayerMidMatch: (teamNum: 1 | 2, playerId: string) => void;
+  addPlayerMidMatch: (teamNum: 1 | 2, playerName: string) => void;
+  updateTotalOvers: (overs: number) => void;
   deleteBall: (ballId: string) => void;
 };
 
@@ -525,14 +527,34 @@ export const useMatchStore = create<MatchState>((set) => ({
     };
   }),
 
+  addPlayerMidMatch: (teamNum, playerName) => set((state) => {
+    const teamKey = teamNum === 1 ? 'team1' : 'team2';
+    const newPlayer: Player = {
+      id: generateId(),
+      name: playerName,
+      runs: 0,
+      ballsFaced: 0,
+      fours: 0,
+      sixes: 0,
+      isOut: false,
+    };
+    return {
+      ...pushSnapshot(state),
+      [teamKey]: {
+        ...state[teamKey],
+        players: [...state[teamKey].players, newPlayer]
+      }
+    };
+  }),
+
+  updateTotalOvers: (overs) => set((state) => {
+    return {
+      ...pushSnapshot(state),
+      totalOvers: overs
+    };
+  }),
+
   deleteBall: (ballId) => set((state) => {
-    // This removes a specific ball from history and adjusts stats.
-    // For simplicity and safety, if we delete a ball, we should ideally re-calculate the state.
-    // However, given the complexity, we will implement a "rebuild state" approach.
-    // A simpler way: we don't fully support arbitrary deletion without rebuilding, 
-    // so we will just undo until that ball is gone if it's the last ball, 
-    // or we'll have to re-evaluate the whole history.
-    // Actually, let's just use undoLastAction for "Delete last ball".
-    return state; // Placeholder, might be better to just rely on undo.
+    return state; 
   }),
 }));

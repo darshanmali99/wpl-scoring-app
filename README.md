@@ -30,7 +30,11 @@ The app features a sleek "neon" UI, dedicated umpire controls, real-time synchro
 - 🏏 **"Last Man Standing" Rule:** Automatically handles the scenario where 10 wickets fall but the last remaining batter continues to play without a non-striker.
 - 👔 **Umpire (Admin) Controls:** Dedicated admin dashboard to update runs, wickets, extras (wides/no-balls), swap strike, and undo actions.
 - 🔄 **Undo Functionality:** Made a mistake? Quickly undo the last ball without breaking the score or over calculations.
-- 📱 **Mobile-First Neon UI:** Beautiful dark mode aesthetic with micro-animations, including a custom animated cricket bat and flying ball when a batter hits a "FOUR!" or "SIX!".
+- 📊 **Full Real-World Scorecard:** A professional dedicated scorecard view for both innings, tracking runs, balls, boundaries, strike rates, overs, maidens, wickets, and economy.
+- ⚙️ **Mid-Match Editing:** Umpires can dynamically edit the match on the fly—add or remove players from either team, or modify the total overs midway through the game.
+- 🎬 **Wicket & Boundary Animations:** Immersive full-screen CSS animations when a batter gets out or hits a boundary (FOUR! / SIX!).
+- ⚪ **White Ball Runs Configuration:** Toggle whether wide balls should add an extra run to the team's total score during match creation.
+- 📱 **Mobile-First Neon UI:** Beautiful dark mode aesthetic with micro-animations.
 - ⚡ **Optimized State Management:** Blazing fast local updates powered by Zustand before syncing to the cloud.
 
 ---
