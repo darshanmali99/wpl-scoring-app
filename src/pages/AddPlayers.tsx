@@ -22,7 +22,7 @@ export const AddPlayers = () => {
 
   const handleStartMatch = () => {
     startMatch();
-    navigate(`/live/${matchCode}?admin=true`);
+    navigate(`/live/${matchCode}`);
   };
 
   const currentTeam = activeTab === 1 ? team1 : team2;

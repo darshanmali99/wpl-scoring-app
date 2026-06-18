@@ -4,8 +4,10 @@ import { useMatchStore } from '../store/matchStore';
 import type { Player, BallEvent } from '../store/matchStore';
 import { Card } from '../components/Card';
 import { NeonButton } from '../components/NeonButton';
-import { Trophy, Trash2, Undo2, Crown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trophy, Trash2, Undo2, Crown, ChevronDown, ChevronUp, MonitorPlay, UserMinus } from 'lucide-react';
 import { useFirebaseSync } from '../hooks/useFirebaseSync';
+import { Scoreboard } from '../components/Scoreboard';
+import { WicketAnimation } from '../components/WicketAnimation';
 
 const ScoreButton = ({ value, onClick, color = 'green', className = '', disabled = false }: { value: string | number, onClick: () => void, color?: 'green' | 'blue' | 'red' | 'yellow', className?: string, disabled?: boolean }) => {
   const colorClass = color === 'green' ? 'border-neonGreen text-neonGreen hover:bg-neonGreen/20' 
@@ -26,15 +28,30 @@ const ScoreButton = ({ value, onClick, color = 'green', className = '', disabled
 export const LiveScore = () => {
   const { code } = useParams();
   const [searchParams] = useSearchParams();
-  const isAdmin = searchParams.get('admin') === 'true';
+  const isAdmin = localStorage.getItem(`wpl_admin_${code}`) === 'true';
   const navigate = useNavigate();
 
   const store = useMatchStore();
   const [cheer, setCheer] = useState<string | null>(null);
   const [showOverHistory, setShowOverHistory] = useState(false);
+  const [showScoreboard, setShowScoreboard] = useState(!isAdmin); // Viewers see it by default
+  const [showWicketAnim, setShowWicketAnim] = useState(false);
+  const [prevWickets, setPrevWickets] = useState(0);
 
   // Sync state with Firebase
   const { isLoading } = useFirebaseSync(code, isAdmin);
+
+  useEffect(() => {
+    if (store.status === 'IN_PROGRESS' || store.status === 'INNINGS_BREAK' || store.status === 'COMPLETED') {
+      const isTeam1Batting = store.currentInnings === 1;
+      const currentWickets = isTeam1Batting ? store.team1.wickets : store.team2.wickets;
+      
+      if (currentWickets > prevWickets && prevWickets !== 0) {
+        setShowWicketAnim(true);
+      }
+      setPrevWickets(currentWickets);
+    }
+  }, [store.team1.wickets, store.team2.wickets, store.status, store.currentInnings, prevWickets]);
 
   useEffect(() => {
     if (store.matchCode && store.matchCode !== code) {
@@ -100,9 +117,9 @@ export const LiveScore = () => {
     }
   };
 
-  const oversHistory = Array.from({ length: Math.floor(battingTeam.totalBalls / 6) + (battingTeam.totalBalls % 6 === 0 ? 0 : 1) }).map((_, i) => {
-    return store.ballHistory.filter(b => b.overNum === i);
-  });
+  const oversHistory = Array.from({ length: Math.floor(battingTeam.totalBalls / 6) + (battingTeam.totalBalls % 6 === 0 ? 0 : 1) })
+    .map((_, i) => store.ballHistory.filter(b => b.overNum === i))
+    .reverse();
 
   let manOfTheMatch = null;
   let bowlerOfTheMatch = null;
@@ -215,6 +232,9 @@ export const LiveScore = () => {
         </div>
       )}
 
+      {showWicketAnim && <WicketAnimation onComplete={() => setShowWicketAnim(false)} />}
+      {showScoreboard && <Scoreboard onClose={() => isAdmin ? setShowScoreboard(false) : navigate('/')} />}
+
       {/* Header Bar */}
       <div className="bg-darkSurface p-4 flex justify-between items-center shadow-lg border-b border-white/5">
         <div className="flex items-center gap-2">
@@ -222,6 +242,11 @@ export const LiveScore = () => {
           <span className="font-bold tracking-wider text-sm sm:text-base">WPL LIVE</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
+          {isAdmin && (
+            <button onClick={() => setShowScoreboard(true)} className="flex items-center gap-1 text-xs text-neonBlue hover:text-white transition-colors bg-white/5 px-2 py-1 rounded">
+              <MonitorPlay className="w-4 h-4" /> Scoreboard
+            </button>
+          )}
           <div className="text-xs sm:text-sm font-mono bg-black/50 px-2 py-1 rounded-full border border-white/10">
             CODE: <span className="text-neonBlue">{store.matchCode || code}</span>
           </div>
@@ -284,7 +309,10 @@ export const LiveScore = () => {
                     const overRuns = overBalls.reduce((sum, b) => sum + b.runs + (b.isExtra ? 1 : 0), 0);
                     return (
                       <div key={index} className="flex items-center justify-between bg-black/30 p-2 rounded border border-white/5">
-                        <span className="text-xs text-gray-400 w-12">Over {index + 1}</span>
+                        <div className="flex flex-col w-20">
+                          <span className="text-xs text-gray-400">Over {overBalls[0]?.overNum + 1}</span>
+                          <span className="text-[10px] text-neonBlue truncate" title={overBalls[0]?.bowlerName}>{overBalls[0]?.bowlerName || 'Unknown'}</span>
+                        </div>
                         <div className="flex-1 flex gap-1 overflow-x-auto mx-2 custom-scrollbar pb-1">
                           {overBalls.map(b => (
                             <div key={b.id} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${b.isWicket ? 'bg-red-500/20 text-red-500 border border-red-500/50' : b.runs === 4 || b.runs === 6 ? 'bg-neonGreen/20 text-neonGreen border border-neonGreen/50' : b.isExtra ? 'bg-yellow-400/20 text-yellow-400 border border-yellow-400/50' : 'bg-white/10 text-white border border-white/20'}`}>
@@ -354,14 +382,34 @@ export const LiveScore = () => {
                 Umpire Controls
                 {umpireDisabled && <span className="text-red-400 ml-2 normal-case text-xs">(Select Bowler & Striker)</span>}
               </h3>
-              {store.pastStates.length > 0 && (
+              <div className="flex gap-2">
                 <button 
-                  onClick={() => store.undoLastAction()}
-                  className="flex items-center gap-1 text-[10px] sm:text-xs text-yellow-400 hover:text-yellow-300 transition-colors bg-yellow-400/10 px-2 py-1 rounded border border-yellow-400/20"
+                  onClick={() => {
+                     const playerName = prompt("Enter Player Name to remove:");
+                     if (playerName) {
+                       const player = battingTeam.players.find(p => p.name.toLowerCase() === playerName.toLowerCase()) || 
+                                      bowlingTeam.players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
+                       if (player) {
+                         const teamNum = battingTeam.players.includes(player) ? store.currentInnings : (store.currentInnings === 1 ? 2 : 1);
+                         store.removePlayerMidMatch(teamNum as 1|2, player.id);
+                       } else {
+                         alert("Player not found!");
+                       }
+                     }
+                  }}
+                  className="flex items-center gap-1 text-[10px] sm:text-xs text-red-400 hover:text-red-300 transition-colors bg-red-400/10 px-2 py-1 rounded border border-red-400/20"
                 >
-                  <Undo2 className="w-3 h-3" /> Undo Last
+                  <UserMinus className="w-3 h-3" /> Remove Player
                 </button>
-              )}
+                {store.pastStates.length > 0 && (
+                  <button 
+                    onClick={() => store.undoLastAction()}
+                    className="flex items-center gap-1 text-[10px] sm:text-xs text-yellow-400 hover:text-yellow-300 transition-colors bg-yellow-400/10 px-2 py-1 rounded border border-yellow-400/20"
+                  >
+                    <Undo2 className="w-3 h-3" /> Undo Last
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-4 gap-2 sm:gap-3 place-items-center">

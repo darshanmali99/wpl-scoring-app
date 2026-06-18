@@ -18,6 +18,8 @@ export const Home = () => {
     }
   };
 
+  const isAdminSession = matchCode && localStorage.getItem(`wpl_admin_${matchCode}`) === 'true';
+
   return (
     <div className="min-h-screen p-6 flex flex-col max-w-md mx-auto">
       <Header />
@@ -38,7 +40,7 @@ export const Home = () => {
           >
             <Play className="w-5 h-5" /> Create New Match
           </NeonButton>
-          {matchCode && (
+          {isAdminSession && (
              <NeonButton 
              variant="outline"
              onClick={() => {
@@ -46,7 +48,7 @@ export const Home = () => {
                if (status === 'PLAYERS_SETUP') {
                  navigate('/add-players');
                } else {
-                 navigate(`/live/${matchCode}?admin=true`);
+                 navigate(`/live/${matchCode}`);
                }
              }}
            >
